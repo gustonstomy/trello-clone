@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '../../lib/supabase/client'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "../../lib/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -11,53 +11,53 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '../../hooks/use-toast'
-import { Loader2 } from 'lucide-react'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "../../hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface CreateOrganizationDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export default function CreateOrganizationDialog({
   open,
   onOpenChange,
 }: CreateOrganizationDialogProps) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
-  const supabase = createClient()
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const supabase = createClient();
 
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-  }
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) throw new Error('Not authenticated')
+      if (!user) throw new Error("Not authenticated");
 
-      const slug = generateSlug(name)
+      const slug = generateSlug(name);
 
       // Create organization
       const { data: org, error: orgError } = await supabase
-        .from('organizations')
+        .from("organizations")
         .insert({
           name,
           slug,
@@ -65,40 +65,40 @@ export default function CreateOrganizationDialog({
           created_by: user.id,
         })
         .select()
-        .single()
+        .single();
 
-      if (orgError) throw orgError
+      if (orgError) throw orgError;
 
       // Add creator as owner
       const { error: memberError } = await supabase
-        .from('organization_members')
+        .from("organization_members")
         .insert({
           organization_id: org.id,
           user_id: user.id,
-          role: 'owner',
-        })
+          role: "owner",
+        });
 
-      if (memberError) throw memberError
+      if (memberError) throw memberError;
 
       toast({
-        title: 'Organization created!',
+        title: "Organization created!",
         description: `${name} has been created successfully.`,
-      })
+      });
 
-      setName('')
-      setDescription('')
-      onOpenChange(false)
-      router.refresh()
+      setName("");
+      setDescription("");
+      onOpenChange(false);
+      router.refresh();
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create organization',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to create organization",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -150,12 +150,12 @@ export default function CreateOrganizationDialog({
                   Creating...
                 </>
               ) : (
-                'Create Organization'
+                "Create Organization"
               )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '../../../../lib/supabase/server'
 
 type CreateInviteBody = {
   organizationId: string
