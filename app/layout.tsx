@@ -1,29 +1,29 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { ReactQueryProvider } from '../lib/react-query'
-import { Toaster } from '../components/ui/sonner'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { ReactQueryProvider } from "../lib/react-query";
+import { Toaster } from "../components/ui/sonner";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Trello Clone',
-  description: 'A full-featured Trello clone built with Next.js and Supabase',
-}
+  title: "Trello Clone",
+  description: "A full-featured Trello clone built with Next.js and Supabase",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-[#003465]`}>
         <ReactQueryProvider>
           {children}
           <Toaster />
         </ReactQueryProvider>
       </body>
     </html>
-  )
+  );
 }

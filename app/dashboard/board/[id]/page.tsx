@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useEffect, useState, use } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '../../../../hooks/use-auth'
-import { useBoardStore } from '../../../../store/board-store'
-import { Button } from '../../../../components/ui/button'
-import { Loader2,  Plus } from 'lucide-react'
-import {  Card } from '../../../../types'
-import BoardHeader from '../../../../components/board/board-header'
-import BoardList from '../../../../components/board/board-list'
-import CreateListDialog from '../../../../components/board/create-list-dialog'
+import { useEffect, useState, use, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../../../hooks/use-auth";
+import { useBoardStore } from "../../../../store/board-store";
+import { Button } from "../../../../components/ui/button";
+import { Loader2, Plus } from "lucide-react";
+import { Card } from "../../../../types";
+import BoardHeader from "../../../../components/board/board-header";
+import BoardList from "../../../../components/board/board-list";
+import CreateListDialog from "../../../../components/board/create-list-dialog";
 import {
   DndContext,
   DragEndEvent,
@@ -20,28 +20,35 @@ import {
   useSensor,
   useSensors,
   closestCorners,
-} from '@dnd-kit/core'
-import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
-import CardItem from '../../../../components/board/card-item'
-import { createClient } from '../../../../lib/supabase/client'
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import CardItem from "../../../../components/board/card-item";
+import { createClient } from "../../../../lib/supabase/client";
 
-export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params)
-  const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(true)
-  const [showCreateList, setShowCreateList] = useState(false)
-  const [activeCard, setActiveCard] = useState<Card | null>(null)
-  const router = useRouter()
-  const supabase = createClient()
+export default function BoardPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCreateList, setShowCreateList] = useState(false);
+  const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const router = useRouter();
 
-  const {
-    currentBoard,
-    lists,
-    cards,
-    setBoard,
-    setLists,
-    setCards,
-  } = useBoardStore()
+  // Memoize the supabase client to prevent recreating it on every render
+  const supabase = useMemo(() => createClient(), []);
+
+  // Track if we've already fetched data for this board to prevent duplicate fetches
+  const hasFetchedRef = useRef<string | null>(null);
+
+  const { currentBoard, lists, cards, setBoard, setLists, setCards } =
+    useBoardStore();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -49,310 +56,356 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         distance: 8,
       },
     })
-  )
+  );
 
   useEffect(() => {
     const fetchBoard = async () => {
-      if (!user) return
+      if (!user) return;
+
+      // Skip if we've already fetched this board
+      if (hasFetchedRef.current === resolvedParams.id) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
+        // Mark this board as being fetched
+        hasFetchedRef.current = resolvedParams.id;
+
         // Fetch board
         const { data: boardData, error: boardError } = await supabase
-          .from('boards')
-          .select('*, organizations(*)')
-          .eq('id', resolvedParams.id)
-          .single()
+          .from("boards")
+          .select("*, organizations(*)")
+          .eq("id", resolvedParams.id)
+          .single();
 
-        if (boardError) throw boardError
+        if (boardError) throw boardError;
 
         // Check if user has access
         const { data: memberData } = await supabase
-          .from('organization_members')
-          .select('*')
-          .eq('organization_id', boardData.organization_id)
-          .eq('user_id', user.id)
-          .single()
+          .from("organization_members")
+          .select("*")
+          .eq("organization_id", boardData.organization_id)
+          .eq("user_id", user.id)
+          .single();
 
         if (!memberData) {
-          router.push('/dashboard')
-          return
+          router.push("/dashboard");
+          return;
         }
 
-        setBoard(boardData)
+        setBoard(boardData);
 
         // Fetch lists
         const { data: listsData, error: listsError } = await supabase
-          .from('lists')
-          .select('*')
-          .eq('board_id', resolvedParams.id)
-          .order('position', { ascending: true })
+          .from("lists")
+          .select("*")
+          .eq("board_id", resolvedParams.id)
+          .order("position", { ascending: true });
 
-        if (listsError) throw listsError
-        setLists(listsData || [])
+        if (listsError) throw listsError;
+        setLists(listsData || []);
 
         // Fetch cards for each list
         if (listsData) {
           for (const list of listsData) {
             const { data: cardsData, error: cardsError } = await supabase
-              .from('cards')
-              .select('*')
-              .eq('list_id', list.id)
-              .order('position', { ascending: true })
+              .from("cards")
+              .select("*")
+              .eq("list_id", list.id)
+              .order("position", { ascending: true });
 
             if (!cardsError && cardsData) {
-              setCards(list.id, cardsData)
+              setCards(list.id, cardsData);
             }
           }
         }
       } catch (error) {
-        console.error('Error fetching board:', error)
-        router.push('/dashboard')
+        console.error("Error fetching board:", error);
+        router.push("/dashboard");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchBoard()
+    fetchBoard();
 
     // Subscribe to real-time changes
     const listsChannel = supabase
       .channel(`board-${resolvedParams.id}-lists`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'lists',
+          event: "*",
+          schema: "public",
+          table: "lists",
           filter: `board_id=eq.${resolvedParams.id}`,
         },
         async (payload) => {
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === "INSERT") {
             const { data } = await supabase
-              .from('lists')
-              .select('*')
-              .eq('id', payload.new.id)
-              .single()
-            if (data) useBoardStore.getState().addList(data)
-          } else if (payload.eventType === 'UPDATE') {
-            useBoardStore.getState().updateList(payload.new.id, payload.new)
-          } else if (payload.eventType === 'DELETE') {
-            useBoardStore.getState().deleteList(payload.old.id)
+              .from("lists")
+              .select("*")
+              .eq("id", payload.new.id)
+              .single();
+            if (data) useBoardStore.getState().addList(data);
+          } else if (payload.eventType === "UPDATE") {
+            useBoardStore.getState().updateList(payload.new.id, payload.new);
+          } else if (payload.eventType === "DELETE") {
+            useBoardStore.getState().deleteList(payload.old.id);
           }
         }
       )
-      .subscribe()
+      .subscribe();
 
     const cardsChannel = supabase
       .channel(`board-${resolvedParams.id}-cards`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'cards',
+          event: "*",
+          schema: "public",
+          table: "cards",
         },
         async (payload) => {
-          if (payload.eventType === 'INSERT') {
+          if (payload.eventType === "INSERT") {
             const { data } = await supabase
-              .from('cards')
-              .select('*')
-              .eq('id', payload.new.id)
-              .single()
-            if (data) useBoardStore.getState().addCard(data.list_id, data)
-          } else if (payload.eventType === 'UPDATE') {
-            useBoardStore.getState().updateCard(payload.new.id, payload.new)
-          } else if (payload.eventType === 'DELETE') {
-            useBoardStore.getState().deleteCard(payload.old.id)
+              .from("cards")
+              .select("*")
+              .eq("id", payload.new.id)
+              .single();
+            if (data) useBoardStore.getState().addCard(data.list_id, data);
+          } else if (payload.eventType === "UPDATE") {
+            useBoardStore.getState().updateCard(payload.new.id, payload.new);
+          } else if (payload.eventType === "DELETE") {
+            useBoardStore.getState().deleteCard(payload.old.id);
           }
         }
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(listsChannel)
-      supabase.removeChannel(cardsChannel)
-    }
-  }, [user, resolvedParams.id, router, supabase, setBoard, setLists, setCards])
+      supabase.removeChannel(listsChannel);
+      supabase.removeChannel(cardsChannel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, resolvedParams.id]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event
-    const activeId = active.id as string
+    const { active } = event;
+    const activeId = active.id as string;
 
     // Find the card being dragged
-    let foundCard: Card | null = null
+    let foundCard: Card | null = null;
     Object.values(cards).forEach((listCards) => {
-      const card = listCards.find((c) => c.id === activeId)
-      if (card) foundCard = card
-    })
+      const card = listCards.find((c) => c.id === activeId);
+      if (card) foundCard = card;
+    });
 
-    setActiveCard(foundCard)
-  }
+    setActiveCard(foundCard);
+  };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over) return
+    const { active, over } = event;
+    if (!over) return;
 
-    const activeId = active.id as string
-    const overId = over.id as string
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
-    if (activeId === overId) return
+    if (activeId === overId) return;
 
     // Handle card reordering
     const activeList = Object.keys(cards).find((listId) =>
       cards[listId].some((card) => card.id === activeId)
-    )
-    const overList = Object.keys(cards).find((listId) =>
-      cards[listId].some((card) => card.id === overId)
-    )
+    );
 
-    if (!activeList) return
+    // Check if dropping on a droppable zone (empty list)
+    let overList = Object.keys(cards).find((listId) =>
+      cards[listId].some((card) => card.id === overId)
+    );
+
+    // If overId is a droppable zone, extract the list ID
+    if (!overList && overId.startsWith("droppable-")) {
+      overList = overId.replace("droppable-", "");
+    }
+
+    if (!activeList) return;
 
     if (activeList === overList) {
       // Same list reordering
-      const listCards = cards[activeList]
-      const oldIndex = listCards.findIndex((card) => card.id === activeId)
-      const newIndex = listCards.findIndex((card) => card.id === overId)
+      const listCards = cards[activeList];
+      const oldIndex = listCards.findIndex((card) => card.id === activeId);
+      const newIndex = listCards.findIndex((card) => card.id === overId);
 
-      const reorderedCards = arrayMove(listCards, oldIndex, newIndex)
-      setCards(activeList, reorderedCards)
+      const reorderedCards = arrayMove(listCards, oldIndex, newIndex);
+      setCards(activeList, reorderedCards);
     } else if (overList) {
-      // Moving to different list
-      const activeListCards = [...cards[activeList]]
-      const overListCards = [...cards[overList]]
+      // Moving to different list (including empty lists)
+      const activeListCards = [...cards[activeList]];
+      const overListCards = [...(cards[overList] || [])];
 
-      const activeCardIndex = activeListCards.findIndex((card) => card.id === activeId)
-      const overCardIndex = overListCards.findIndex((card) => card.id === overId)
+      const activeCardIndex = activeListCards.findIndex(
+        (card) => card.id === activeId
+      );
 
-      const [movedCard] = activeListCards.splice(activeCardIndex, 1)
-      movedCard.list_id = overList
-      overListCards.splice(overCardIndex, 0, movedCard)
+      // If dropping on droppable zone (empty list), add to end
+      // Otherwise, insert at the position of the card we're hovering over
+      let insertIndex = overListCards.length;
+      if (!overId.startsWith("droppable-")) {
+        const overCardIndex = overListCards.findIndex(
+          (card) => card.id === overId
+        );
+        if (overCardIndex !== -1) {
+          insertIndex = overCardIndex;
+        }
+      }
 
-      setCards(activeList, activeListCards)
-      setCards(overList, overListCards)
+      const [movedCard] = activeListCards.splice(activeCardIndex, 1);
+      movedCard.list_id = overList;
+      overListCards.splice(insertIndex, 0, movedCard);
+
+      setCards(activeList, activeListCards);
+      setCards(overList, overListCards);
     }
-  }
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveCard(null)
+    const { active, over } = event;
+    setActiveCard(null);
 
-    if (!over) return
+    if (!over) return;
 
-    const activeId = active.id as string
-    const overId = over.id as string
+    const activeId = active.id as string;
+    const overId = over.id as string;
 
     // Find the card and update position in database
-    let sourceListId: string | null = null
-    let destListId: string | null = null
-    let newPosition = 0
+    let sourceListId: string | null = null;
+    let destListId: string | null = null;
+    let newPosition = 0;
 
     Object.entries(cards).forEach(([listId, listCards]) => {
-      const cardIndex = listCards.findIndex((c) => c.id === activeId)
+      const cardIndex = listCards.findIndex((c) => c.id === activeId);
       if (cardIndex !== -1) {
-        sourceListId = listId
+        sourceListId = listId;
       }
-      const overIndex = listCards.findIndex((c) => c.id === overId)
+      const overIndex = listCards.findIndex((c) => c.id === overId);
       if (overIndex !== -1) {
-        destListId = listId
-        newPosition = overIndex
+        destListId = listId;
+        newPosition = overIndex;
       }
-    })
+    });
 
-    if (!sourceListId) return
+    // Check if overId is a droppable zone (empty list)
+    if (!destListId && overId.startsWith("droppable-")) {
+      destListId = overId.replace("droppable-", "");
+      newPosition = cards[destListId]?.length || 0;
+    }
+
+    if (!sourceListId) return;
 
     try {
       // Check if it's a list being dragged (starts with 'list-')
-      if (activeId.startsWith('list-')) {
+      if (activeId.startsWith("list-")) {
         // List reordering
-        const activeListId = activeId.replace('list-', '')
-        const overListId = overId.replace('list-', '')
+        const activeListId = activeId.replace("list-", "");
+        const overListId = overId.replace("list-", "");
 
-        const oldIndex = lists.findIndex((list) => list.id === activeListId)
-        const newIndex = lists.findIndex((list) => list.id === overListId)
+        const oldIndex = lists.findIndex((list) => list.id === activeListId);
+        const newIndex = lists.findIndex((list) => list.id === overListId);
 
         if (oldIndex !== newIndex) {
-          const reorderedLists = arrayMove(lists, oldIndex, newIndex)
-          setLists(reorderedLists)
+          const reorderedLists = arrayMove(lists, oldIndex, newIndex);
+          setLists(reorderedLists);
 
           // Update positions in database
           const updates = reorderedLists.map((list, index) => ({
             id: list.id,
             position: index,
-          }))
+          }));
 
           for (const update of updates) {
             await supabase
-              .from('lists')
+              .from("lists")
               .update({ position: update.position })
-              .eq('id', update.id)
+              .eq("id", update.id);
           }
         }
       } else {
         // Card movement
-        const finalDestListId = destListId || sourceListId
-        const destCards = cards[finalDestListId]
+        const finalDestListId = destListId || sourceListId;
+        const destCards = cards[finalDestListId];
 
         await supabase
-          .from('cards')
+          .from("cards")
           .update({
             list_id: finalDestListId,
             position: newPosition,
           })
-          .eq('id', activeId)
+          .eq("id", activeId);
 
         // Update positions for all cards in destination list
         const updates = destCards.map((card, index) => ({
           id: card.id,
           position: index,
-        }))
+        }));
 
         for (const update of updates) {
           if (update.id !== activeId) {
             await supabase
-              .from('cards')
+              .from("cards")
               .update({ position: update.position })
-              .eq('id', update.id)
+              .eq("id", update.id);
           }
         }
 
         // Log activity
         if (sourceListId !== finalDestListId) {
-          await supabase.from('card_activities').insert({
+          await supabase.from("card_activities").insert({
             card_id: activeId,
             user_id: user?.id,
-            action: 'moved',
-          
+            action: "moved",
+
             details: {
               from_list_id: sourceListId,
               to_list_id: finalDestListId,
             },
-          })
+          });
         }
       }
     } catch (error) {
-      console.error('Error updating positions:', error)
+      console.error("Error updating positions:", error);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
-    )
+    );
   }
 
   if (!currentBoard) {
-    return <div>Board not found</div>
+    return <div>Board not found</div>;
   }
 
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: currentBoard.background_color }}
+      // style={{ backgroundColor: currentBoard.background_color }}
     >
       <div className="container mx-auto px-4 py-6">
-        <BoardHeader board={currentBoard} />
+        <div className="shrink-0 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-2 p-2 mb-6 rounded-xl border border-[#1976D2]/40">
+          <BoardHeader board={currentBoard} />
+          <Button
+            onClick={() => setShowCreateList(true)}
+            variant="secondary"
+            className="w-72 bg-white/20 hover:bg-white/30 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add a list
+          </Button>
+        </div>
 
         <DndContext
           sensors={sensors}
@@ -361,7 +414,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 overflow-x-auto pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto overflow-x-hidden pb-4">
             <SortableContext
               items={lists.map((list) => `list-${list.id}`)}
               strategy={horizontalListSortingStrategy}
@@ -374,17 +427,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 />
               ))}
             </SortableContext>
-
-            <div className="shrink-0">
-              <Button
-                onClick={() => setShowCreateList(true)}
-                variant="secondary"
-                className="w-72 bg-white/20 hover:bg-white/30 text-white"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add a list
-              </Button>
-            </div>
           </div>
 
           <DragOverlay>
@@ -403,5 +445,5 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         boardId={currentBoard.id}
       />
     </div>
-  )
+  );
 }

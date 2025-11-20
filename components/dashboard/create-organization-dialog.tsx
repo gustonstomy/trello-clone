@@ -88,6 +88,9 @@ export default function CreateOrganizationDialog({
       setName("");
       setDescription("");
       onOpenChange(false);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("organization-created"));
+      }
       router.refresh();
     } catch (error: any) {
       toast({

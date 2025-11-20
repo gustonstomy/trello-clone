@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Board, List, Card } from '@/types'
+import { Board, List, Card } from '../types'
 
 interface BoardState {
   currentBoard: Board | null

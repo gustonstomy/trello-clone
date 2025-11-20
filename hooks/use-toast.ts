@@ -1,17 +1,20 @@
-import { toast as sonnerToast } from 'sonner'
+import { toast as sonnerToast } from "sonner";
 
 export function useToast() {
   return {
-    toast: ({ title, description, variant }: {
-      title: string
-      description?: string
-      variant?: 'default' | 'destructive'
+    toast: ({
+      description,
+      variant,
+    }: {
+      title: string;
+      description?: string;
+      variant?: "default" | "destructive";
     }) => {
-      if (variant === 'destructive') {
-        sonnerToast.error(title, { description })
+      if (variant === "destructive") {
+        sonnerToast.error(description);
       } else {
-        sonnerToast.success(title, { description })
+        sonnerToast.success(description);
       }
-    }
-  }
+    },
+  };
 }
