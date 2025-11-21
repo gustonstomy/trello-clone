@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -57,7 +56,6 @@ export default function BoardList({ list, cards }: BoardListProps) {
     },
   });
 
-  // Add droppable zone for the list to accept cards even when empty
   const { setNodeRef: setDroppableRef } = useDroppable({
     id: `droppable-${list.id}`,
     data: {
@@ -90,10 +88,8 @@ export default function BoardList({ list, cards }: BoardListProps) {
 
       if (error) throw error;
 
-      // Immediately add the card to the store for instant UI update
       useBoardStore.getState().addCard(list.id, data);
 
-      // Log activity
       await supabase.from("card_activities").insert({
         card_id: data.id,
         user_id: user.id,

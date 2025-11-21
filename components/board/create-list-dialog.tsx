@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,20 +8,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '../ui/button'
-import { Label } from '../ui/label'
+} from "@/components/ui/dialog";
+import { Button } from "../ui/button";
+import { Label } from "../ui/label";
 
-import { Loader2 } from 'lucide-react'
-import { createClient } from '../../lib/supabase/client'
-import { Input } from '../ui/input'
-import { useToast } from '../../hooks/use-toast'
-import { useBoardStore } from '../../store/board-store'
+import { Loader2 } from "lucide-react";
+import { createClient } from "../../lib/supabase/client";
+import { Input } from "../ui/input";
+import { useToast } from "../../hooks/use-toast";
+import { useBoardStore } from "../../store/board-store";
 
 interface CreateListDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  boardId: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  boardId: string;
 }
 
 export default function CreateListDialog({
@@ -30,49 +29,49 @@ export default function CreateListDialog({
   onOpenChange,
   boardId,
 }: CreateListDialogProps) {
-  const [name, setName] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
-  const supabase = createClient()
-  const { lists, addList } = useBoardStore()
+  const [name, setName] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const supabase = createClient();
+  const { lists, addList } = useBoardStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return
+    e.preventDefault();
+    if (!name.trim()) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
       const { data, error } = await supabase
-        .from('lists')
+        .from("lists")
         .insert({
           board_id: boardId,
           name: name.trim(),
           position: lists.length,
         })
         .select()
-        .single()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
-      addList(data)
+      addList(data);
       toast({
-        title: 'List created!',
+        title: "List created!",
         description: `${name} has been added to the board.`,
-      })
+      });
 
-      setName('')
-      onOpenChange(false)
+      setName("");
+      onOpenChange(false);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create list',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to create list",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,12 +113,12 @@ export default function CreateListDialog({
                   Creating...
                 </>
               ) : (
-                'Create List'
+                "Create List"
               )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

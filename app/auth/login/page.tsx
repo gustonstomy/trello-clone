@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import { useState } from "react";
@@ -68,7 +69,6 @@ export default function LoginPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Optional overlay for better card visibility */}
       <div className="absolute inset-0 bg-black/20" />
 
       <Card className="w-full max-w-md relative z-10 bg-[#1976D2]/40 border border-[#1976D2]/40 text-white text-base space-y-6">

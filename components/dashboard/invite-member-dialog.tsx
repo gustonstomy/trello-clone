@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -97,7 +96,6 @@ export default function InviteMemberDialog({
         description: "Invite link copied to clipboard",
       });
       setTimeout(() => setCopied(false), 2000);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast({
         title: "Error",

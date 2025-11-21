@@ -41,7 +41,6 @@ export default function OrganizationPage({
       if (!user) return;
 
       try {
-        // Fetch organization
         const { data: orgData, error: orgError } = await supabase
           .from("organizations")
           .select("*")
@@ -51,7 +50,6 @@ export default function OrganizationPage({
         if (orgError) throw orgError;
         setOrganization(orgData);
 
-        // Fetch user's role
         const { data: memberData } = await supabase
           .from("organization_members")
           .select("role")
@@ -61,7 +59,6 @@ export default function OrganizationPage({
 
         setUserRole(memberData?.role || null);
 
-        // Fetch boards
         const { data: boardsData, error: boardsError } = await supabase
           .from("boards")
           .select("*")
@@ -71,7 +68,6 @@ export default function OrganizationPage({
         if (boardsError) throw boardsError;
         setBoards(boardsData || []);
 
-        // Fetch members
         const { data: membersData, error: membersError } = await supabase
           .from("organization_members")
           .select("*, profiles(*)")
@@ -95,7 +91,6 @@ export default function OrganizationPage({
   };
 
   const handleMemberInvited = () => {
-    // Refresh members list
     const fetchMembers = async () => {
       if (!organization) return;
       const { data } = await supabase
@@ -109,8 +104,8 @@ export default function OrganizationPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex items-center justify-center py-20 h-[80vh]">
+        <Loader2 className="h-16 w-16 animate-spin text-white" />
       </div>
     );
   }
@@ -124,13 +119,12 @@ export default function OrganizationPage({
   return (
     <>
       <div className="space-y-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">
               {organization.name}
             </h1>
-            <p className="text-white mt-2">{organization.description}</p>
+            <p className="text-blue-200 mt-2">{organization.description}</p>
           </div>
           <div className="flex items-center space-x-2">
             {canManage && (
@@ -138,6 +132,7 @@ export default function OrganizationPage({
                 <Button
                   variant="outline"
                   onClick={() => setShowInviteMember(true)}
+                  className="bg-transparent border-[#0085FF]/50 text-blue-200 hover:text-white hover:bg-[#0085FF]/20 hover:border-[#0085FF]"
                 >
                   <Users className="mr-2 h-4 w-4" />
                   Invite Members
@@ -145,6 +140,7 @@ export default function OrganizationPage({
                 <Button
                   variant="outline"
                   onClick={() => setShowManageMembers(true)}
+                  className="bg-transparent border-[#0085FF]/50 text-blue-200 hover:text-white hover:bg-[#0085FF]/20 hover:border-[#0085FF]"
                 >
                   <Settings className="mr-2 h-4 w-4" />
                   Manage
@@ -154,11 +150,10 @@ export default function OrganizationPage({
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className=" bg-[#1976D2]/40 border-[#1976D2]/40 text-white">
+          <Card className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium ">
+              <CardTitle className="text-sm font-medium text-blue-200">
                 Total Boards
               </CardTitle>
             </CardHeader>
@@ -166,17 +161,21 @@ export default function OrganizationPage({
               <div className="text-2xl font-bold">{boards.length}</div>
             </CardContent>
           </Card>
-          <Card className=" bg-[#1976D2]/40 border-[#1976D2]/40 text-white">
+          <Card className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Members</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-200">
+                Members
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{members.length}</div>
             </CardContent>
           </Card>
-          <Card className=" bg-[#1976D2]/40 border-[#1976D2]/40 text-white">
+          <Card className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 text-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Your Role</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-200">
+                Your Role
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold capitalize">{userRole}</div>
@@ -184,13 +183,12 @@ export default function OrganizationPage({
           </Card>
         </div>
 
-        {/* Boards */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-white">Boards</h2>
             <Button
               onClick={() => setShowCreateBoard(true)}
-              className="bg-[#003465] border border-[#1976D2]/40 font-bold py-6"
+              className="bg-[#0085FF]/10 hover:shadow-lg hover:shadow-[#0085FF]/50 text-white border border-[#0085FF]/50 font-bold py-6 transition-all"
             >
               <Plus className="mr-2 h-4 w-4" />
               Create Board
@@ -198,14 +196,19 @@ export default function OrganizationPage({
           </div>
 
           {boards.length === 0 ? (
-            <Card className="border-dashed">
+            <Card className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Plus className="h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No boards yet</h3>
-                <p className="text-gray-600 text-center mb-6">
+                <Plus className="h-12 w-12 text-[#0085FF] mb-4" />
+                <h3 className="text-lg font-semibold mb-2 text-white">
+                  No boards yet
+                </h3>
+                <p className="text-blue-200 text-center mb-6">
                   Create your first board to start organizing tasks
                 </p>
-                <Button onClick={() => setShowCreateBoard(true)}>
+                <Button
+                  onClick={() => setShowCreateBoard(true)}
+                  className="bg-[#0085FF]/10 hover:bg-[#0085FF]/20 text-white border border-[#0085FF]/50"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Board
                 </Button>
@@ -216,11 +219,11 @@ export default function OrganizationPage({
               {boards.map((board) => (
                 <Link key={board.id} href={`/dashboard/board/${board.id}`}>
                   <Card
-                    className="hover:shadow-lg transition-shadow cursor-pointer h-32 "
+                    className="hover:shadow-lg transition-all duration-300 cursor-pointer h-32 border-0 hover:scale-105"
                     style={{ backgroundColor: board.background_color }}
                   >
                     <CardHeader>
-                      <CardTitle className="text-white text-lg">
+                      <CardTitle className="text-white text-lg drop-shadow-md">
                         {board.name}
                       </CardTitle>
                     </CardHeader>

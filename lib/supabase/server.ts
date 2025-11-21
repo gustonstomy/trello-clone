@@ -17,7 +17,6 @@ export async function createClient() {
           try {
             cookieStore.set({ name, value, ...options });
           } catch (error) {
-            // Handle cookie setting in server components
             console.log(error);
           }
         },
@@ -26,7 +25,6 @@ export async function createClient() {
             cookieStore.set({ name, value: "", ...options });
           } catch (error) {
             console.log(error);
-            // Handle cookie removal in server components
           }
         },
       },

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -55,7 +54,6 @@ export default function CreateOrganizationDialog({
 
       const slug = generateSlug(name);
 
-      // Create organization
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({
@@ -69,7 +67,6 @@ export default function CreateOrganizationDialog({
 
       if (orgError) throw orgError;
 
-      // Add creator as owner
       const { error: memberError } = await supabase
         .from("organization_members")
         .insert({

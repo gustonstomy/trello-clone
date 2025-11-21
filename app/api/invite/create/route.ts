@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import nodemailer from "nodemailer";
 
-// Configure your email service
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT || "587"),
@@ -19,7 +18,6 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { organizationId, email, role = "member" } = await request.json();
 
-    // Get current user
     const {
       data: { user },
       error: authError,
@@ -29,7 +27,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has permission to invite
     const { data: membership } = await supabase
       .from("organization_members")
       .select("role")
@@ -44,7 +41,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user is already a member
     const { data: existingProfile } = await supabase
       .from("profiles")
       .select("id")
@@ -67,7 +63,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get organization details
     const { data: organization } = await supabase
       .from("organizations")
       .select("*")
@@ -81,12 +76,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create invite token
     const token = uuidv4();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create invite in database
     const { data: invite, error: inviteError } = await supabase
       .from("organization_invites")
       .insert({
@@ -110,10 +103,8 @@ export async function POST(request: NextRequest) {
       throw inviteError;
     }
 
-    // Generate invite link
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
 
-    // Send email
     let emailSent = false;
     const smtpConfigured =
       process.env.SMTP_HOST &&
@@ -214,8 +205,6 @@ export async function POST(request: NextRequest) {
         emailSent = true;
       } catch (emailError) {
         console.error("Failed to send email:", emailError);
-        // Don't fail the API call if email sending fails
-        // The invite was created successfully
       }
     } else {
       console.log(

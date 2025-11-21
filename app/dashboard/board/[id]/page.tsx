@@ -41,10 +41,8 @@ export default function BoardPage({
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const router = useRouter();
 
-  // Memoize the supabase client to prevent recreating it on every render
   const supabase = useMemo(() => createClient(), []);
 
-  // Track if we've already fetched data for this board to prevent duplicate fetches
   const hasFetchedRef = useRef<string | null>(null);
 
   const { currentBoard, lists, cards, setBoard, setLists, setCards } =
@@ -62,17 +60,14 @@ export default function BoardPage({
     const fetchBoard = async () => {
       if (!user) return;
 
-      // Skip if we've already fetched this board
       if (hasFetchedRef.current === resolvedParams.id) {
         setIsLoading(false);
         return;
       }
 
       try {
-        // Mark this board as being fetched
         hasFetchedRef.current = resolvedParams.id;
 
-        // Fetch board
         const { data: boardData, error: boardError } = await supabase
           .from("boards")
           .select("*, organizations(*)")
@@ -81,7 +76,6 @@ export default function BoardPage({
 
         if (boardError) throw boardError;
 
-        // Check if user has access
         const { data: memberData } = await supabase
           .from("organization_members")
           .select("*")
@@ -96,7 +90,6 @@ export default function BoardPage({
 
         setBoard(boardData);
 
-        // Fetch lists
         const { data: listsData, error: listsError } = await supabase
           .from("lists")
           .select("*")
@@ -106,7 +99,6 @@ export default function BoardPage({
         if (listsError) throw listsError;
         setLists(listsData || []);
 
-        // Fetch cards for each list
         if (listsData) {
           for (const list of listsData) {
             const { data: cardsData, error: cardsError } = await supabase
@@ -130,7 +122,6 @@ export default function BoardPage({
 
     fetchBoard();
 
-    // Subscribe to real-time changes
     const listsChannel = supabase
       .channel(`board-${resolvedParams.id}-lists`)
       .on(
@@ -195,7 +186,6 @@ export default function BoardPage({
     const { active } = event;
     const activeId = active.id as string;
 
-    // Find the card being dragged
     let foundCard: Card | null = null;
     Object.values(cards).forEach((listCards) => {
       const card = listCards.find((c) => c.id === activeId);
@@ -214,17 +204,14 @@ export default function BoardPage({
 
     if (activeId === overId) return;
 
-    // Handle card reordering
     const activeList = Object.keys(cards).find((listId) =>
       cards[listId].some((card) => card.id === activeId)
     );
 
-    // Check if dropping on a droppable zone (empty list)
     let overList = Object.keys(cards).find((listId) =>
       cards[listId].some((card) => card.id === overId)
     );
 
-    // If overId is a droppable zone, extract the list ID
     if (!overList && overId.startsWith("droppable-")) {
       overList = overId.replace("droppable-", "");
     }
@@ -232,7 +219,6 @@ export default function BoardPage({
     if (!activeList) return;
 
     if (activeList === overList) {
-      // Same list reordering
       const listCards = cards[activeList];
       const oldIndex = listCards.findIndex((card) => card.id === activeId);
       const newIndex = listCards.findIndex((card) => card.id === overId);
@@ -240,7 +226,6 @@ export default function BoardPage({
       const reorderedCards = arrayMove(listCards, oldIndex, newIndex);
       setCards(activeList, reorderedCards);
     } else if (overList) {
-      // Moving to different list (including empty lists)
       const activeListCards = [...cards[activeList]];
       const overListCards = [...(cards[overList] || [])];
 
@@ -248,8 +233,6 @@ export default function BoardPage({
         (card) => card.id === activeId
       );
 
-      // If dropping on droppable zone (empty list), add to end
-      // Otherwise, insert at the position of the card we're hovering over
       let insertIndex = overListCards.length;
       if (!overId.startsWith("droppable-")) {
         const overCardIndex = overListCards.findIndex(
@@ -278,7 +261,6 @@ export default function BoardPage({
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    // Find the card and update position in database
     let sourceListId: string | null = null;
     let destListId: string | null = null;
     let newPosition = 0;
@@ -295,7 +277,6 @@ export default function BoardPage({
       }
     });
 
-    // Check if overId is a droppable zone (empty list)
     if (!destListId && overId.startsWith("droppable-")) {
       destListId = overId.replace("droppable-", "");
       newPosition = cards[destListId]?.length || 0;
@@ -304,9 +285,7 @@ export default function BoardPage({
     if (!sourceListId) return;
 
     try {
-      // Check if it's a list being dragged (starts with 'list-')
       if (activeId.startsWith("list-")) {
-        // List reordering
         const activeListId = activeId.replace("list-", "");
         const overListId = overId.replace("list-", "");
 
@@ -317,7 +296,6 @@ export default function BoardPage({
           const reorderedLists = arrayMove(lists, oldIndex, newIndex);
           setLists(reorderedLists);
 
-          // Update positions in database
           const updates = reorderedLists.map((list, index) => ({
             id: list.id,
             position: index,
@@ -331,7 +309,6 @@ export default function BoardPage({
           }
         }
       } else {
-        // Card movement
         const finalDestListId = destListId || sourceListId;
         const destCards = cards[finalDestListId];
 
@@ -343,7 +320,6 @@ export default function BoardPage({
           })
           .eq("id", activeId);
 
-        // Update positions for all cards in destination list
         const updates = destCards.map((card, index) => ({
           id: card.id,
           position: index,
@@ -358,7 +334,6 @@ export default function BoardPage({
           }
         }
 
-        // Log activity
         if (sourceListId !== finalDestListId) {
           await supabase.from("card_activities").insert({
             card_id: activeId,
@@ -379,8 +354,8 @@ export default function BoardPage({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex items-center justify-center py-20 h-[80vh]">
+        <Loader2 className="h-16 w-16 animate-spin text-white" />
       </div>
     );
   }
@@ -390,10 +365,7 @@ export default function BoardPage({
   }
 
   return (
-    <div
-      className="min-h-screen"
-      // style={{ backgroundColor: currentBoard.background_color }}
-    >
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6">
         <div className="shrink-0 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-2 p-2 mb-6 rounded-xl border border-[#1976D2]/40">
           <BoardHeader board={currentBoard} />

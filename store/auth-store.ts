@@ -26,7 +26,6 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
-        // Don't persist isLoading - always start as true
       }),
     }
   )

@@ -1,31 +1,29 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 
-import { useAuth } from '../../hooks/use-auth'
+import { useAuth } from "../../hooks/use-auth";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '../ui/button'
-import { Input } from '../ui/input'
-import { Textarea } from '../ui/textarea'
-import { Label } from '../ui/label'
-import { useToast } from '../../hooks/use-toast'
-import { Card } from '../../types'
-import { Loader2, Trash2, Clock } from 'lucide-react'
-import { useBoardStore } from '../../store/board-store'
-import { format } from 'date-fns'
-import { createClient } from '../../lib/supabase/client'
+} from "@/components/ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Label } from "../ui/label";
+import { useToast } from "../../hooks/use-toast";
+import { Card } from "../../types";
+import { Loader2, Trash2, Clock } from "lucide-react";
+import { useBoardStore } from "../../store/board-store";
+import { format } from "date-fns";
+import { createClient } from "../../lib/supabase/client";
 
 interface CardDetailsDialogProps {
-  card: Card
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  card: Card;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export default function CardDetailsDialog({
@@ -33,160 +31,159 @@ export default function CardDetailsDialog({
   open,
   onOpenChange,
 }: CardDetailsDialogProps) {
-  const { user } = useAuth()
-  const [title, setTitle] = useState(card.title)
-  const [description, setDescription] = useState(card.description || '')
-  const [activities, setActivities] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const { toast } = useToast()
-  const supabase = createClient()
-  const { updateCard, deleteCard } = useBoardStore()
+  const { user } = useAuth();
+  const [title, setTitle] = useState(card.title);
+  const [description, setDescription] = useState(card.description || "");
+  const [activities, setActivities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+  const supabase = createClient();
+  const { updateCard, deleteCard } = useBoardStore();
 
   useEffect(() => {
     if (open) {
-      setTitle(card.title)
-      setDescription(card.description || '')
-      fetchActivities()
+      setTitle(card.title);
+      setDescription(card.description || "");
+      fetchActivities();
     }
-  }, [open, card])
+  }, [open, card]);
 
   const fetchActivities = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('card_activities')
-        .select('*, profiles(*)')
-        .eq('card_id', card.id)
-        .order('created_at', { ascending: false })
+        .from("card_activities")
+        .select("*, profiles(*)")
+        .eq("card_id", card.id)
+        .order("created_at", { ascending: false });
 
-      if (error) throw error
-      setActivities(data || [])
+      if (error) throw error;
+      setActivities(data || []);
     } catch (error) {
-      console.error('Error fetching activities:', error)
+      console.error("Error fetching activities:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
       toast({
-        title: 'Error',
-        description: 'Card title cannot be empty',
-        variant: 'destructive',
-      })
-      return
+        title: "Error",
+        description: "Card title cannot be empty",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
 
     try {
-      const updates: any = {}
-      let hasChanges = false
+      const updates: any = {};
+      let hasChanges = false;
 
       if (title !== card.title) {
-        updates.title = title.trim()
-        hasChanges = true
+        updates.title = title.trim();
+        hasChanges = true;
       }
 
-      if (description !== (card.description || '')) {
-        updates.description = description.trim() || null
-        hasChanges = true
+      if (description !== (card.description || "")) {
+        updates.description = description.trim() || null;
+        hasChanges = true;
       }
 
       if (!hasChanges) {
-        onOpenChange(false)
-        return
+        onOpenChange(false);
+        return;
       }
 
       const { error } = await supabase
-        .from('cards')
+        .from("cards")
         .update(updates)
-        .eq('id', card.id)
+        .eq("id", card.id);
 
-      if (error) throw error
+      if (error) throw error;
 
-      // Log activity
       if (title !== card.title) {
-        await supabase.from('card_activities').insert({
+        await supabase.from("card_activities").insert({
           card_id: card.id,
           user_id: user?.id,
-          action: 'updated',
-          details: { field: 'title', old: card.title, new: title },
-        })
+          action: "updated",
+          details: { field: "title", old: card.title, new: title },
+        });
       }
 
-      if (description !== (card.description || '')) {
-        await supabase.from('card_activities').insert({
+      if (description !== (card.description || "")) {
+        await supabase.from("card_activities").insert({
           card_id: card.id,
           user_id: user?.id,
-          action: 'updated',
-          details: { field: 'description' },
-        })
+          action: "updated",
+          details: { field: "description" },
+        });
       }
 
-      updateCard(card.id, updates)
+      updateCard(card.id, updates);
       toast({
-        title: 'Card updated',
-        description: 'Your changes have been saved',
-      })
+        title: "Card updated",
+        description: "Your changes have been saved",
+      });
 
-      fetchActivities()
+      fetchActivities();
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update card',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to update card",
+        variant: "destructive",
+      });
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this card?')) return
+    if (!confirm("Are you sure you want to delete this card?")) return;
 
     try {
-      const { error } = await supabase.from('cards').delete().eq('id', card.id)
+      const { error } = await supabase.from("cards").delete().eq("id", card.id);
 
-      if (error) throw error
+      if (error) throw error;
 
-      deleteCard(card.id)
+      deleteCard(card.id);
       toast({
-        title: 'Card deleted',
-        description: 'The card has been deleted successfully',
-      })
-      onOpenChange(false)
+        title: "Card deleted",
+        description: "The card has been deleted successfully",
+      });
+      onOpenChange(false);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete card',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to delete card",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const getActivityMessage = (activity: any) => {
-    const userName = activity.profiles?.full_name || 'Someone'
+    const userName = activity.profiles?.full_name || "Someone";
 
     switch (activity.action) {
-      case 'created':
-        return `${userName} created this card`
-      case 'updated':
-        if (activity.details?.field === 'title') {
-          return `${userName} changed the title`
+      case "created":
+        return `${userName} created this card`;
+      case "updated":
+        if (activity.details?.field === "title") {
+          return `${userName} changed the title`;
         }
-        if (activity.details?.field === 'description') {
-          return `${userName} updated the description`
+        if (activity.details?.field === "description") {
+          return `${userName} updated the description`;
         }
-        return `${userName} updated this card`
-      case 'moved':
-        return `${userName} moved this card`
+        return `${userName} updated this card`;
+      case "moved":
+        return `${userName} moved this card`;
       default:
-        return `${userName} made changes`
+        return `${userName} made changes`;
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -225,7 +222,7 @@ export default function CardDetailsDialog({
                   Saving...
                 </>
               ) : (
-                'Save Changes'
+                "Save Changes"
               )}
             </Button>
             <Button
@@ -258,12 +255,18 @@ export default function CardDetailsDialog({
                     className="flex items-start space-x-3 text-sm"
                   >
                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-                      {activity.profiles?.full_name?.charAt(0).toUpperCase() || '?'}
+                      {activity.profiles?.full_name?.charAt(0).toUpperCase() ||
+                        "?"}
                     </div>
                     <div className="flex-1">
-                      <p className="text-gray-900">{getActivityMessage(activity)}</p>
+                      <p className="text-gray-900">
+                        {getActivityMessage(activity)}
+                      </p>
                       <p className="text-xs text-gray-500">
-                        {format(new Date(activity.created_at), 'MMM d, yyyy \'at\' h:mm a')}
+                        {format(
+                          new Date(activity.created_at),
+                          "MMM d, yyyy 'at' h:mm a"
+                        )}
                       </p>
                     </div>
                   </div>
@@ -274,5 +277,5 @@ export default function CardDetailsDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

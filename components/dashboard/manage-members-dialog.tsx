@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 
 import {
   Dialog,
@@ -9,16 +8,16 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,19 +27,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { useToast } from '../../hooks/use-toast'
-import { Loader2, Trash2 } from 'lucide-react'
-import { Organization } from '../../types'
-import { createClient } from '../../lib/supabase/client'
+} from "@/components/ui/alert-dialog";
+import { useToast } from "../../hooks/use-toast";
+import { Loader2, Trash2 } from "lucide-react";
+import { Organization } from "../../types";
+import { createClient } from "../../lib/supabase/client";
 
 interface ManageMembersDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  organization: Organization
-  members: any[]
-  userRole: string | null
-  onMembersChanged: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organization: Organization;
+  members: any[];
+  userRole: string | null;
+  onMembersChanged: () => void;
 }
 
 export default function ManageMembersDialog({
@@ -51,79 +50,79 @@ export default function ManageMembersDialog({
   userRole,
   onMembersChanged,
 }: ManageMembersDialogProps) {
-  const [isUpdating, setIsUpdating] = useState<string | null>(null)
-  const [memberToRemove, setMemberToRemove] = useState<any>(null)
-  const { toast } = useToast()
-  const supabase = createClient()
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<any>(null);
+  const { toast } = useToast();
+  const supabase = createClient();
 
-  const canManage = userRole === 'owner' || userRole === 'admin'
+  const canManage = userRole === "owner" || userRole === "admin";
 
   const handleRoleChange = async (memberId: string, newRole: string) => {
-    if (!canManage) return
+    if (!canManage) return;
 
-    setIsUpdating(memberId)
+    setIsUpdating(memberId);
 
     try {
       const { error } = await supabase
-        .from('organization_members')
-        .update({ role: newRole as 'admin' | 'member' | 'owner' })
-        .eq('id', memberId)
+        .from("organization_members")
+        .update({ role: newRole as "admin" | "member" | "owner" })
+        .eq("id", memberId);
 
-      if (error) throw error
+      if (error) throw error;
 
       toast({
-        title: 'Role updated',
-        description: 'Member role has been updated successfully',
-      })
+        title: "Role updated",
+        description: "Member role has been updated successfully",
+      });
 
-      onMembersChanged()
+      onMembersChanged();
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to update role',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to update role",
+        variant: "destructive",
+      });
     } finally {
-      setIsUpdating(null)
+      setIsUpdating(null);
     }
-  }
+  };
 
   const handleRemoveMember = async () => {
-    if (!memberToRemove || !canManage) return
+    if (!memberToRemove || !canManage) return;
 
     try {
       const { error } = await supabase
-        .from('organization_members')
+        .from("organization_members")
         .delete()
-        .eq('id', memberToRemove.id)
+        .eq("id", memberToRemove.id);
 
-      if (error) throw error
+      if (error) throw error;
 
       toast({
-        title: 'Member removed',
-        description: 'Member has been removed from the organization',
-      })
+        title: "Member removed",
+        description: "Member has been removed from the organization",
+      });
 
-      onMembersChanged()
-      setMemberToRemove(null)
+      onMembersChanged();
+      setMemberToRemove(null);
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to remove member',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to remove member",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const getInitials = (name: string | null, email: string) => {
-    if (!name) return email.charAt(0).toUpperCase()
+    if (!name) return email.charAt(0).toUpperCase();
     return name
-      .split(' ')
+      .split(" ")
       .map((n) => n[0])
-      .join('')
+      .join("")
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   return (
     <>
@@ -138,8 +137,8 @@ export default function ManageMembersDialog({
 
           <div className="space-y-4 py-4">
             {members.map((member: any) => {
-              const isOwner = member.role === 'owner'
-              const canModify = canManage && !isOwner && userRole === 'owner'
+              const isOwner = member.role === "owner";
+              const canModify = canManage && !isOwner && userRole === "owner";
 
               return (
                 <div
@@ -149,8 +148,8 @@ export default function ManageMembersDialog({
                   <div className="flex items-center space-x-3">
                     <Avatar>
                       <AvatarImage
-                        src={member.profiles?.avatar_url || ''}
-                        alt={member.profiles?.full_name || ''}
+                        src={member.profiles?.avatar_url || ""}
+                        alt={member.profiles?.full_name || ""}
                       />
                       <AvatarFallback>
                         {getInitials(
@@ -161,7 +160,7 @@ export default function ManageMembersDialog({
                     </Avatar>
                     <div>
                       <p className="font-medium">
-                        {member.profiles?.full_name || 'Unknown User'}
+                        {member.profiles?.full_name || "Unknown User"}
                       </p>
                       <p className="text-sm text-gray-500">
                         {member.profiles?.email}
@@ -173,7 +172,9 @@ export default function ManageMembersDialog({
                     {canModify ? (
                       <Select
                         value={member.role}
-                        onValueChange={(value) => handleRoleChange(member.id, value)}
+                        onValueChange={(value) =>
+                          handleRoleChange(member.id, value)
+                        }
                         disabled={isUpdating === member.id}
                       >
                         <SelectTrigger className="w-32">
@@ -206,7 +207,7 @@ export default function ManageMembersDialog({
                     )}
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </DialogContent>
@@ -220,8 +221,8 @@ export default function ManageMembersDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Member</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove{' '}
-              {memberToRemove?.profiles?.full_name || 'this member'} from the
+              Are you sure you want to remove{" "}
+              {memberToRemove?.profiles?.full_name || "this member"} from the
               organization? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -237,5 +238,5 @@ export default function ManageMembersDialog({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
+  );
 }
