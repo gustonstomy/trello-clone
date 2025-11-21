@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, LogOut, Settings, User } from "lucide-react";
+import { Home, LogOut } from "lucide-react";
 import { Profile } from "../../types";
 import CreateOrganizationDialog from "../../components/dashboard/create-organization-dialog";
 
@@ -45,7 +45,7 @@ export default function DashboardNav({ user }: { user: Profile | null }) {
               <div className="hidden md:flex space-x-4">
                 <Link
                   href="/dashboard"
-                  className="px-3 py-2 rounded-md text-sm font-medium  text-white"
+                  className="px-3 py-2 rounded-md text-sm font-medium  text-white flex items-center justify-center"
                 >
                   <Home className="inline-block mr-2 h-4 w-4" />
                   Dashboard
@@ -93,19 +93,7 @@ export default function DashboardNav({ user }: { user: Profile | null }) {
                       </span>
                     </div>
                   </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild className="group">
-                    <Link href="/dashboard/profile">
-                      <User className="mr-2 h-4 w-4 text-white group-hover:text-black" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="group">
-                    <Link href="/dashboard/settings">
-                      <Settings className="mr-2 h-4 w-4 text-white group-hover:text-black" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
+
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={signOut}

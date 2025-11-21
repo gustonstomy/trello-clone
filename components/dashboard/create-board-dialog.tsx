@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '../../lib/supabase/client'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "../../lib/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -11,26 +11,33 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Loader2 } from 'lucide-react'
-import { Board } from '../../types'
-import { useToast } from '../../hooks/use-toast'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
+import { Board } from "../../types";
+import { useToast } from "../../hooks/use-toast";
 
 interface CreateBoardDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  organizationId: string
-  onBoardCreated: (board: Board) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  onBoardCreated: (board: Board) => void;
 }
 
 const BOARD_COLORS = [
-  '#0079BF', '#D29034', '#519839', '#B04632', '#89609E',
-  '#CD5A91', '#4BBF6B', '#00AECC', '#838C91'
-]
+  "#0079BF",
+  "#D29034",
+  "#519839",
+  "#B04632",
+  "#89609E",
+  "#CD5A91",
+  "#4BBF6B",
+  "#00AECC",
+  "#838C91",
+];
 
 export default function CreateBoardDialog({
   open,
@@ -38,27 +45,27 @@ export default function CreateBoardDialog({
   organizationId,
   onBoardCreated,
 }: CreateBoardDialogProps) {
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [selectedColor, setSelectedColor] = useState(BOARD_COLORS[0])
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
-  const supabase = createClient()
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedColor, setSelectedColor] = useState(BOARD_COLORS[0]);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
 
-      if (!user) throw new Error('Not authenticated')
+      if (!user) throw new Error("Not authenticated");
 
       const { data: board, error } = await supabase
-        .from('boards')
+        .from("boards")
         .insert({
           organization_id: organizationId,
           name,
@@ -67,31 +74,31 @@ export default function CreateBoardDialog({
           created_by: user.id,
         })
         .select()
-        .single()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
       toast({
-        title: 'Board created!',
+        title: "Board created!",
         description: `${name} has been created successfully.`,
-      })
+      });
 
-      onBoardCreated(board)
-      setName('')
-      setDescription('')
-      setSelectedColor(BOARD_COLORS[0])
-      onOpenChange(false)
-      router.refresh()
+      onBoardCreated(board);
+      setName("");
+      setDescription("");
+      setSelectedColor(BOARD_COLORS[0]);
+      onOpenChange(false);
+      router.refresh();
     } catch (error: any) {
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to create board',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: error.message || "Failed to create board",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,7 +110,7 @@ export default function CreateBoardDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="board-name">Board Name</Label>
               <Input
@@ -126,17 +133,17 @@ export default function CreateBoardDialog({
                 rows={3}
               />
             </div>
-            <div className="space-y-2">
-              <Label>Background Color</Label>
-              <div className="flex flex-wrap gap-2">
+            <div className="space-y-2 ">
+              <Label className="py-4">Background Color</Label>
+              <div className="flex flex-wrap gap-2 mb-4">
                 {BOARD_COLORS.map((color) => (
                   <button
                     key={color}
                     type="button"
-                    className={`w-12 h-12 rounded-md transition-all ${
+                    className={`w-12 h-12 rounded-md transition-all mt-2 ${
                       selectedColor === color
-                        ? 'ring-2 ring-offset-2 ring-blue-500 scale-110'
-                        : 'hover:scale-105'
+                        ? "ring-2 ring-offset-2 ring-blue-500 scale-110"
+                        : "hover:scale-105"
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => setSelectedColor(color)}
@@ -162,12 +169,12 @@ export default function CreateBoardDialog({
                   Creating...
                 </>
               ) : (
-                'Create Board'
+                "Create Board"
               )}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

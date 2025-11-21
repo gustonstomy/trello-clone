@@ -21,11 +21,12 @@ export default function DashboardPage() {
     []
   );
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchOrganizations = async () => {
       if (!user) return;
+
+      const supabase = createClient();
 
       try {
         const { data, error } = await supabase
@@ -74,7 +75,21 @@ export default function DashboardPage() {
     };
 
     fetchOrganizations();
-  }, [user, supabase]);
+
+    // Listen for organization creation events
+    const handleOrganizationCreated = () => {
+      fetchOrganizations();
+    };
+
+    window.addEventListener("organization-created", handleOrganizationCreated);
+
+    return () => {
+      window.removeEventListener(
+        "organization-created",
+        handleOrganizationCreated
+      );
+    };
+  }, [user]);
 
   if (isLoading) {
     return (

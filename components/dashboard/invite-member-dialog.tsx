@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client'
+"use client";
 
-import { useState } from 'react'
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,28 +9,27 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 
-import { Loader2, Copy, Check } from 'lucide-react'
-import { Organization } from '../../types'
-import { useToast } from '../../hooks/use-toast'
-
+import { Loader2, Copy, Check } from "lucide-react";
+import { Organization } from "../../types";
+import { useToast } from "../../hooks/use-toast";
 
 interface InviteMemberDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  organization: Organization
-  onMemberInvited: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organization: Organization;
+  onMemberInvited: () => void;
 }
 
 export default function InviteMemberDialog({
@@ -39,82 +38,82 @@ export default function InviteMemberDialog({
   organization,
   onMemberInvited,
 }: InviteMemberDialogProps) {
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState<'member' | 'admin'>('member')
-  const [isLoading, setIsLoading] = useState(false)
-  const [inviteLink, setInviteLink] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  const { toast } = useToast()
-
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"member" | "admin">("member");
+  const [isLoading, setIsLoading] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      const response = await fetch('/api/invite/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/invite/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizationId: organization.id,
           email,
           role,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create invite')
+        throw new Error(data.error || "Failed to create invite");
       }
 
-      setInviteLink(data.inviteLink)
+      setInviteLink(data.inviteLink);
 
       toast({
-        title: 'Invite sent!',
-        description: `An invitation has been created for ${email}`,
-      })
+        title: data.emailSent ? "Invite sent!" : "Invite created!",
+        description:
+          data.message || `An invitation has been created for ${email}`,
+      });
 
-      onMemberInvited()
+      onMemberInvited();
     } catch (error: any) {
       toast({
-        title: 'Error',
+        title: "Error",
         description: error.message,
-        variant: 'destructive',
-      })
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCopyLink = async () => {
-    if (!inviteLink) return
+    if (!inviteLink) return;
 
     try {
-      await navigator.clipboard.writeText(inviteLink)
-      setCopied(true)
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
       toast({
-        title: 'Copied!',
-        description: 'Invite link copied to clipboard',
-      })
-      setTimeout(() => setCopied(false), 2000)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        title: "Copied!",
+        description: "Invite link copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to copy link',
-        variant: 'destructive',
-      })
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleClose = () => {
-    setEmail('')
-    setRole('member')
-    setInviteLink(null)
-    setCopied(false)
-    onOpenChange(false)
-  }
+    setEmail("");
+    setRole("member");
+    setInviteLink(null);
+    setCopied(false);
+    onOpenChange(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -145,7 +144,7 @@ export default function InviteMemberDialog({
                 <Label htmlFor="role">Role</Label>
                 <Select
                   value={role}
-                  onValueChange={(value: 'member' | 'admin') => setRole(value)}
+                  onValueChange={(value: "member" | "admin") => setRole(value)}
                   disabled={isLoading}
                 >
                   <SelectTrigger>
@@ -177,7 +176,7 @@ export default function InviteMemberDialog({
                     Creating...
                   </>
                 ) : (
-                  'Create Invite'
+                  "Create Invite"
                 )}
               </Button>
             </DialogFooter>
@@ -202,7 +201,10 @@ export default function InviteMemberDialog({
                 </Button>
               </div>
               <p className="text-xs text-gray-500">
-                Share this link with {email}. It expires in 7 days.
+                {inviteLink.includes("emailSent")
+                  ? `An email has been sent to ${email}. You can also share this link directly.`
+                  : `Share this link with ${email}.`}{" "}
+                It expires in 7 days.
               </p>
             </div>
             <DialogFooter>
@@ -212,5 +214,5 @@ export default function InviteMemberDialog({
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
