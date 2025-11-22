@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import {
   Dialog,
@@ -57,6 +59,8 @@ export default function ManageMembersDialog({
 
   const canManage = userRole === "owner" || userRole === "admin";
 
+  const queryClient = useQueryClient();
+
   const handleRoleChange = async (memberId: string, newRole: string) => {
     if (!canManage) return;
 
@@ -75,6 +79,9 @@ export default function ManageMembersDialog({
         description: "Member role has been updated successfully",
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["organization-members", organization.id],
+      });
       onMembersChanged();
     } catch (error: any) {
       toast({
@@ -103,6 +110,9 @@ export default function ManageMembersDialog({
         description: "Member has been removed from the organization",
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["organization-members", organization.id],
+      });
       onMembersChanged();
       setMemberToRemove(null);
     } catch (error: any) {

@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createClient } from "../../../../lib/supabase/client";
-import { useAuth } from "../../../../hooks/use-auth";
+import { useState } from "react";
+import {
+  useOrganization,
+  useOrganizationBoards,
+  useOrganizationMembers,
+  useUserRole,
+} from "../../../../hooks/use-organization";
 import {
   Card,
   CardContent,
@@ -13,7 +17,6 @@ import {
 } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
 import { Loader2, Plus, Settings, Users } from "lucide-react";
-import { Organization, Board, OrganizationMember } from "../../../../types";
 import CreateBoardDialog from "../../../../components/dashboard/create-board-dialog";
 import InviteMemberDialog from "../../../../components/dashboard/invite-member-dialog";
 import ManageMembersDialog from "../../../../components/dashboard/manage-members-dialog";
@@ -24,83 +27,23 @@ export default function OrganizationPage({
   params: Promise<{ slug: string }>;
 }) {
   const resolvedParams = use(params);
-  const { user } = useAuth();
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [boards, setBoards] = useState<Board[]>([]);
-  const [members, setMembers] = useState<OrganizationMember[]>([]);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: organization, isLoading: isOrgLoading } = useOrganization(
+    resolvedParams.slug
+  );
+  const { data: boards = [], isLoading: isBoardsLoading } =
+    useOrganizationBoards(organization?.id);
+  const { data: members = [], isLoading: isMembersLoading } =
+    useOrganizationMembers(organization?.id);
+  const { data: userRole, isLoading: isRoleLoading } = useUserRole(
+    organization?.id
+  );
+
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [showInviteMember, setShowInviteMember] = useState(false);
   const [showManageMembers, setShowManageMembers] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-
-      try {
-        const { data: orgData, error: orgError } = await supabase
-          .from("organizations")
-          .select("*")
-          .eq("slug", resolvedParams.slug)
-          .single();
-
-        if (orgError) throw orgError;
-        setOrganization(orgData);
-
-        const { data: memberData } = await supabase
-          .from("organization_members")
-          .select("role")
-          .eq("organization_id", orgData.id)
-          .eq("user_id", user.id)
-          .single();
-
-        setUserRole(memberData?.role || null);
-
-        const { data: boardsData, error: boardsError } = await supabase
-          .from("boards")
-          .select("*")
-          .eq("organization_id", orgData.id)
-          .order("created_at", { ascending: false });
-
-        if (boardsError) throw boardsError;
-        setBoards(boardsData || []);
-
-        const { data: membersData, error: membersError } = await supabase
-          .from("organization_members")
-          .select("*, profiles(*)")
-          .eq("organization_id", orgData.id);
-
-        if (membersError) throw membersError;
-        setMembers(membersData || []);
-      } catch (error) {
-        console.error("Error fetching organization data:", error);
-        router.push("/dashboard");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user, resolvedParams.slug, router, supabase]);
-
-  const handleBoardCreated = (board: Board) => {
-    setBoards([board, ...boards]);
-  };
-
-  const handleMemberInvited = () => {
-    const fetchMembers = async () => {
-      if (!organization) return;
-      const { data } = await supabase
-        .from("organization_members")
-        .select("*, profiles(*)")
-        .eq("organization_id", organization.id);
-      if (data) setMembers(data);
-    };
-    fetchMembers();
-  };
+  const isLoading =
+    isOrgLoading || isBoardsLoading || isMembersLoading || isRoleLoading;
 
   if (isLoading) {
     return (
@@ -239,14 +182,14 @@ export default function OrganizationPage({
         open={showCreateBoard}
         onOpenChange={setShowCreateBoard}
         organizationId={organization.id}
-        onBoardCreated={handleBoardCreated}
+        onBoardCreated={() => {}}
       />
 
       <InviteMemberDialog
         open={showInviteMember}
         onOpenChange={setShowInviteMember}
         organization={organization}
-        onMemberInvited={handleMemberInvited}
+        onMemberInvited={() => {}}
       />
 
       <ManageMembersDialog
@@ -254,8 +197,8 @@ export default function OrganizationPage({
         onOpenChange={setShowManageMembers}
         organization={organization}
         members={members}
-        userRole={userRole}
-        onMembersChanged={handleMemberInvited}
+        userRole={userRole || null}
+        onMembersChanged={() => {}}
       />
     </>
   );

@@ -1,4 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
+import { useQueryClient } from "@tanstack/react-query";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -33,6 +36,8 @@ export default function CreateOrganizationDialog({
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
+
+  const queryClient = useQueryClient();
 
   const generateSlug = (name: string) => {
     return name
@@ -82,6 +87,9 @@ export default function CreateOrganizationDialog({
         description: `${name} has been created successfully.`,
       });
 
+      // Invalidate the organizations query to trigger a refetch
+      await queryClient.invalidateQueries({ queryKey: ["organizations"] });
+
       setName("");
       setDescription("");
       onOpenChange(false);
@@ -102,17 +110,21 @@ export default function CreateOrganizationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] space-y-4">
         <DialogHeader>
-          <DialogTitle>Create Organization</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-2xl font-bold">
+            Create Organization
+          </DialogTitle>
+          <DialogDescription className="text-base">
             Create a new organization to collaborate with your team.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4 py-4">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Organization Name</Label>
+              <Label htmlFor="name" className="text-base">
+                Organization Name
+              </Label>
               <Input
                 id="name"
                 placeholder="Acme Inc."
@@ -123,7 +135,9 @@ export default function CreateOrganizationDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description (optional)</Label>
+              <Label htmlFor="description" className="text-base">
+                Description (optional)
+              </Label>
               <Textarea
                 id="description"
                 placeholder="What's this organization about?"

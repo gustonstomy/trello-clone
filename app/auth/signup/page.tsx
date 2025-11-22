@@ -47,7 +47,7 @@ export default function SignUpPage() {
       toast({
         title: "Account created!",
         description:
-          "Welcome to Trello Clone. You can now start creating boards.",
+          "Welcome to Trello Pro. You can now start creating boards.",
       });
 
       router.push("/dashboard");

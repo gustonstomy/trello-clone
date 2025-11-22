@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,8 @@ export default function InviteMemberDialog({
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
+  const queryClient = useQueryClient();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -73,6 +77,9 @@ export default function InviteMemberDialog({
           data.message || `An invitation has been created for ${email}`,
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["organization-members", organization.id],
+      });
       onMemberInvited();
     } catch (error: any) {
       toast({

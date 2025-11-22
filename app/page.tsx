@@ -38,8 +38,8 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
           <div className="space-y-8">
             <div className="space-y-4">
-              <div className="inline-block px-4 py-2 bg-[#0085FF]/20 border border-[#0085FF]/50 rounded-full text-[#0085FF] text-sm font-semibold">
-                ✨ Organize & Collaborate
+              <div className="inline-block px-4 py-2 bg-[#0085FF]/20 border border-[#0085FF]/50 rounded-full text-white text-sm font-semibold">
+                Organize & Collaborate
               </div>
               <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
                 Work flows,

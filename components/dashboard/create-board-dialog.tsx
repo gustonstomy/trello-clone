@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { createClient } from "../../lib/supabase/client";
 import {
   Dialog,
@@ -52,6 +54,8 @@ export default function CreateBoardDialog({
   const { toast } = useToast();
   const supabase = createClient();
 
+  const queryClient = useQueryClient();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -82,6 +86,9 @@ export default function CreateBoardDialog({
         description: `${name} has been created successfully.`,
       });
 
+      queryClient.invalidateQueries({
+        queryKey: ["organization-boards", organizationId],
+      });
       onBoardCreated(board);
       setName("");
       setDescription("");

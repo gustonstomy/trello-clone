@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, use, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, use, useMemo } from "react";
 import { useAuth } from "../../../../hooks/use-auth";
+import { useBoard } from "../../../../hooks/use-board";
 import { useBoardStore } from "../../../../store/board-store";
 import { Button } from "../../../../components/ui/button";
 import { Loader2, Plus } from "lucide-react";
@@ -10,6 +10,7 @@ import { Card } from "../../../../types";
 import BoardHeader from "../../../../components/board/board-header";
 import BoardList from "../../../../components/board/board-list";
 import CreateListDialog from "../../../../components/board/create-list-dialog";
+import { Card as UiCard, CardContent } from "../../../../components/ui/card";
 import {
   DndContext,
   DragEndEvent,
@@ -36,14 +37,10 @@ export default function BoardPage({
 }) {
   const resolvedParams = use(params);
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
   const [showCreateList, setShowCreateList] = useState(false);
   const [activeCard, setActiveCard] = useState<Card | null>(null);
-  const router = useRouter();
 
   const supabase = useMemo(() => createClient(), []);
-
-  const hasFetchedRef = useRef<string | null>(null);
 
   const { currentBoard, lists, cards, setBoard, setLists, setCards } =
     useBoardStore();
@@ -56,71 +53,25 @@ export default function BoardPage({
     })
   );
 
+  const { data: boardData, isLoading: isBoardLoading } = useBoard(
+    resolvedParams.id
+  );
+
   useEffect(() => {
-    const fetchBoard = async () => {
-      if (!user) return;
+    if (boardData) {
+      setBoard(boardData);
+      setLists(boardData.lists);
 
-      if (hasFetchedRef.current === resolvedParams.id) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        hasFetchedRef.current = resolvedParams.id;
-
-        const { data: boardData, error: boardError } = await supabase
-          .from("boards")
-          .select("*, organizations(*)")
-          .eq("id", resolvedParams.id)
-          .single();
-
-        if (boardError) throw boardError;
-
-        const { data: memberData } = await supabase
-          .from("organization_members")
-          .select("*")
-          .eq("organization_id", boardData.organization_id)
-          .eq("user_id", user.id)
-          .single();
-
-        if (!memberData) {
-          router.push("/dashboard");
-          return;
+      boardData.lists.forEach((list) => {
+        if (list.cards) {
+          setCards(list.id, list.cards);
         }
+      });
+    }
+  }, [boardData, setBoard, setLists, setCards]);
 
-        setBoard(boardData);
-
-        const { data: listsData, error: listsError } = await supabase
-          .from("lists")
-          .select("*")
-          .eq("board_id", resolvedParams.id)
-          .order("position", { ascending: true });
-
-        if (listsError) throw listsError;
-        setLists(listsData || []);
-
-        if (listsData) {
-          for (const list of listsData) {
-            const { data: cardsData, error: cardsError } = await supabase
-              .from("cards")
-              .select("*")
-              .eq("list_id", list.id)
-              .order("position", { ascending: true });
-
-            if (!cardsError && cardsData) {
-              setCards(list.id, cardsData);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching board:", error);
-        router.push("/dashboard");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBoard();
+  useEffect(() => {
+    if (!user) return;
 
     const listsChannel = supabase
       .channel(`board-${resolvedParams.id}-lists`)
@@ -179,8 +130,7 @@ export default function BoardPage({
       supabase.removeChannel(listsChannel);
       supabase.removeChannel(cardsChannel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, resolvedParams.id]);
+  }, [user, resolvedParams.id, supabase]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -352,7 +302,7 @@ export default function BoardPage({
     }
   };
 
-  if (isLoading) {
+  if (isBoardLoading) {
     return (
       <div className="flex items-center justify-center py-20 h-[80vh]">
         <Loader2 className="h-16 w-16 animate-spin text-white" />
@@ -367,12 +317,12 @@ export default function BoardPage({
   return (
     <div className="min-h-screen">
       <div className="container mx-auto px-4 py-6">
-        <div className="shrink-0 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-2 p-2 mb-6 rounded-xl border border-[#1976D2]/40">
+        <div className="mb-12 shrink-0 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-2 p-2 rounded-xl border border-[#1976D2]/40">
           <BoardHeader board={currentBoard} />
           <Button
             onClick={() => setShowCreateList(true)}
             variant="secondary"
-            className="w-72 bg-white/20 hover:bg-white/30 text-white"
+            className="w-full lg:w-72 bg-white/20 hover:bg-white/30 text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add a list
@@ -386,20 +336,44 @@ export default function BoardPage({
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto overflow-x-hidden pb-4">
-            <SortableContext
-              items={lists.map((list) => `list-${list.id}`)}
-              strategy={horizontalListSortingStrategy}
-            >
-              {lists.map((list) => (
-                <BoardList
-                  key={list.id}
-                  list={list}
-                  cards={cards[list.id] || []}
-                />
-              ))}
-            </SortableContext>
-          </div>
+          {lists.length === 0 ? (
+            <UiCard className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 border-dashed mt-36">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <div className="h-12 w-12 rounded-full bg-[#0085FF]/10 flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-white">
+                  No lists yet
+                </h3>
+                <p className="text-blue-200 text-center mb-6 max-w-md">
+                  Create your first list to start organizing cards and tasks for
+                  this board
+                </p>
+                <Button
+                  onClick={() => setShowCreateList(true)}
+                  className="bg-[#0085FF]/10 hover:shadow-xl hover:shadow-[#0085FF]/40 text-white font-bold py-6 px-8 text-lg transition-all transform hover:scale-105"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create List
+                </Button>
+              </CardContent>
+            </UiCard>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 overflow-y-auto overflow-x-hidden pb-4 no-scrollbar">
+              <SortableContext
+                items={lists.map((list) => `list-${list.id}`)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {lists.map((list) => (
+                  <BoardList
+                    key={list.id}
+                    list={list}
+                    cards={cards[list.id] || []}
+                  />
+                ))}
+              </SortableContext>
+            </div>
+          )}
 
           <DragOverlay>
             {activeCard && (

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -157,7 +158,7 @@ export default function BoardList({ list, cards }: BoardListProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="shrink-0 w-72">
+    <div ref={setNodeRef} style={style} className="shrink-0 w-full">
       <div className="bg-gray-100 rounded-lg p-3 max-h-[calc(100vh-200px)] flex flex-col">
         <div className="flex items-center justify-between mb-3">
           {isEditingTitle ? (
