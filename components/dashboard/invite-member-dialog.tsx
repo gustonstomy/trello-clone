@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { Loader2, Copy, Check } from "lucide-react";
 import { Organization } from "../../types";
 import { useToast } from "../../hooks/use-toast";
@@ -45,8 +44,6 @@ export default function InviteMemberDialog({
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
-
-  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,19 +69,16 @@ export default function InviteMemberDialog({
       setInviteLink(data.inviteLink);
 
       toast({
-        title: data.emailSent ? "Invite sent!" : "Invite created!",
-        description:
-          data.message || `An invitation has been created for ${email}`,
+        title: "Invite sent!",
+        description: `Invitation email has been sent to ${email}`,
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["organization-members", organization.id],
-      });
       onMemberInvited();
     } catch (error: any) {
+      console.error("Invite error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to create invite",
         variant: "destructive",
       });
     } finally {
@@ -104,6 +98,7 @@ export default function InviteMemberDialog({
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
+      console.error("Copy error:", error);
       toast({
         title: "Error",
         description: "Failed to copy link",
@@ -122,10 +117,10 @@ export default function InviteMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-linear-to-br from-[#003465] via-[#001f3f] to-[#003465] text-white">
         <DialogHeader>
           <DialogTitle>Invite Member</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white">
             Invite someone to join {organization.name}
           </DialogDescription>
         </DialogHeader>
@@ -171,27 +166,38 @@ export default function InviteMemberDialog({
                 variant="outline"
                 onClick={handleClose}
                 disabled={isLoading}
+                className="text-red-500"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || !email}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    Sending...
                   </>
                 ) : (
-                  "Create Invite"
+                  "Send Invite"
                 )}
               </Button>
             </DialogFooter>
           </form>
         ) : (
           <div className="space-y-4 py-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-sm text-green-800">
+                <strong>✓ Email sent!</strong> An invitation has been sent to{" "}
+                <strong>{email}</strong>
+              </p>
+            </div>
+
             <div className="space-y-2">
-              <Label>Invite Link</Label>
+              <Label>Backup Invite Link</Label>
+              <p className="text-xs text-gray-500 mb-2">
+                Share this link if the email doesn't arrive:
+              </p>
               <div className="flex space-x-2">
-                <Input value={inviteLink} readOnly className="flex-1" />
+                <Input value={inviteLink} readOnly className="flex-1 text-xs" />
                 <Button
                   type="button"
                   variant="outline"
@@ -205,13 +211,9 @@ export default function InviteMemberDialog({
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500">
-                {inviteLink.includes("emailSent")
-                  ? `An email has been sent to ${email}. You can also share this link directly.`
-                  : `Share this link with ${email}.`}{" "}
-                It expires in 7 days.
-              </p>
+              <p className="text-xs text-gray-500">Link expires in 7 days</p>
             </div>
+
             <DialogFooter>
               <Button onClick={handleClose}>Done</Button>
             </DialogFooter>

@@ -70,9 +70,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
+    const { data: organization } = await supabase
+      .from("organizations")
+      .select("id, name, description")
+      .eq("id", invite.organization_id)
+      .single();
+
     return NextResponse.json({
       success: true,
       organizationId: (invite as any).organization_id,
+      organization: organization || {
+        id: invite.organization_id,
+        name: "Organization",
+      },
     });
   } catch {
     return NextResponse.json(

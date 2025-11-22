@@ -16,10 +16,11 @@ import {
   CardTitle,
 } from "../../../../components/ui/card";
 import { Button } from "../../../../components/ui/button";
-import { Loader2, Plus, Settings, Users } from "lucide-react";
+import { Loader2, Plus, Settings, Trash2, Users } from "lucide-react";
 import CreateBoardDialog from "../../../../components/dashboard/create-board-dialog";
 import InviteMemberDialog from "../../../../components/dashboard/invite-member-dialog";
 import ManageMembersDialog from "../../../../components/dashboard/manage-members-dialog";
+import DeleteOrganizationDialog from "../../../../components/dashboard/delete-organization-dialog";
 
 export default function OrganizationPage({
   params,
@@ -41,6 +42,7 @@ export default function OrganizationPage({
   const [showCreateBoard, setShowCreateBoard] = useState(false);
   const [showInviteMember, setShowInviteMember] = useState(false);
   const [showManageMembers, setShowManageMembers] = useState(false);
+  const [showDeleteOrg, setShowDeleteOrg] = useState(false);
 
   const isLoading =
     isOrgLoading || isBoardsLoading || isMembersLoading || isRoleLoading;
@@ -58,6 +60,7 @@ export default function OrganizationPage({
   }
 
   const canManage = userRole === "owner" || userRole === "admin";
+  const isOwner = userRole === "owner";
 
   return (
     <>
@@ -89,6 +92,15 @@ export default function OrganizationPage({
                   Manage
                 </Button>
               </>
+            )}
+            {isOwner && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteOrg(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Organization
+              </Button>
             )}
           </div>
         </div>
@@ -141,7 +153,9 @@ export default function OrganizationPage({
           {boards.length === 0 ? (
             <Card className="bg-white/5 backdrop-blur-xl border border-[#0085FF]/20 border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Plus className="h-12 w-12 text-[#0085FF] mb-4" />
+                <div className="h-12 w-12 rounded-full bg-[#0085FF]/10 flex items-center justify-center mb-4">
+                  <Plus className="h-6 w-6 text-white" />
+                </div>
                 <h3 className="text-lg font-semibold mb-2 text-white">
                   No boards yet
                 </h3>
@@ -150,7 +164,7 @@ export default function OrganizationPage({
                 </p>
                 <Button
                   onClick={() => setShowCreateBoard(true)}
-                  className="bg-[#0085FF]/10 hover:bg-[#0085FF]/20 text-white border border-[#0085FF]/50"
+                  className="bg-[#0085FF]/10 hover:shadow-lg hover:shadow-[#0085FF]/50 text-white border border-[#0085FF]/50 font-bold py-6 transition-all"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Board
@@ -199,6 +213,12 @@ export default function OrganizationPage({
         members={members}
         userRole={userRole || null}
         onMembersChanged={() => {}}
+      />
+
+      <DeleteOrganizationDialog
+        open={showDeleteOrg}
+        onOpenChange={setShowDeleteOrg}
+        organization={organization}
       />
     </>
   );
